@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mi Markdown</title>
+<meta name="description" content="Convierte PDF y transcripciones de YouTube a Markdown, 100 % en local, para gastar menos tokens con Claude.">
+<meta name="theme-color" content="#14161c">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+  :root{
+    --bg:#14161c; --card:#1d2029; --card2:#252935; --line:#2f3443; --txt:#e9ebf1; --mute:#9aa1b2;
+    --acc:#7c9cff; --acc2:#5b7cf0; --ok:#4cc38a; --warn:#f0b54a; --err:#ef6b6b; --r:16px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--txt);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+  body{padding:env(safe-area-inset-top) 0 calc(24px + env(safe-area-inset-bottom))}
+  .wrap{max-width:760px;margin:0 auto;padding:16px}
+  header{display:flex;align-items:center;gap:12px;margin:4px 0 18px}
+  header img{width:44px;height:44px;border-radius:12px}
+  header h1{font-size:1.45rem;margin:0;letter-spacing:-.01em}
+  header p{margin:0;color:var(--mute);font-size:.88rem}
+  .tabs{display:grid;grid-template-columns:1fr 1fr;gap:6px;background:var(--card);padding:6px;border-radius:14px;margin-bottom:16px}
+  .tabs button{all:unset;text-align:center;padding:10px;border-radius:10px;cursor:pointer;color:var(--mute);font-weight:600}
+  .tabs button.on{background:var(--card2);color:var(--txt);box-shadow:0 1px 0 #ffffff10 inset}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px;margin-bottom:14px}
+  .drop{border:2px dashed var(--line);border-radius:var(--r);padding:28px 16px;text-align:center;cursor:pointer;transition:.15s}
+  .drop.over{border-color:var(--acc);background:#7c9cff12}
+  .drop .big{font-size:2.2rem}
+  .drop b{display:block;margin:6px 0 2px}
+  .drop small{color:var(--mute)}
+  .opts{display:flex;flex-wrap:wrap;gap:8px 18px;margin-top:12px;font-size:.92rem;color:var(--mute)}
+  .opts label{display:flex;align-items:center;gap:6px;cursor:pointer}
+  input[type=checkbox]{accent-color:var(--acc);width:18px;height:18px}
+  input[type=text],input[type=url],textarea{width:100%;background:var(--bg);color:var(--txt);border:1px solid var(--line);border-radius:12px;padding:11px 12px;font:inherit}
+  textarea{resize:vertical;font:14px/1.5 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+  label.f{display:block;font-size:.85rem;color:var(--mute);margin:10px 0 4px}
+  .btn{all:unset;display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:11px 16px;border-radius:12px;background:var(--card2);border:1px solid var(--line);cursor:pointer;font-weight:600;font-size:.95rem}
+  .btn.pri{background:var(--acc2);border-color:var(--acc2);color:#fff}
+  .btn:active{transform:scale(.98)}
+  .row{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+  .row .btn{flex:1 1 auto}
+  .bar{height:8px;background:var(--bg);border-radius:8px;overflow:hidden;margin-top:12px}
+  .bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--acc2),var(--acc));transition:width .2s}
+  .msg{font-size:.92rem;margin-top:10px;color:var(--mute)}
+  .msg.err{color:var(--err)} .msg.warn{color:var(--warn)}
+  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+  .stat{background:var(--bg);border-radius:12px;padding:10px;text-align:center}
+  .stat .n{font-size:1.25rem;font-weight:700}
+  .stat .l{font-size:.75rem;color:var(--mute)}
+  .stat.save .n{color:var(--ok)}
+  .file{font-weight:600;word-break:break-all;margin-bottom:10px}
+  .hint{font-size:.86rem;color:var(--mute);margin:8px 0 0}
+  .hint ol{margin:6px 0 0;padding-left:20px}
+  details summary{cursor:pointer;color:var(--acc);font-size:.9rem}
+  .hide{display:none!important}
+  .toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));transform:translateX(-50%) translateY(30px);background:var(--card2);border:1px solid var(--line);padding:10px 16px;border-radius:12px;opacity:0;transition:.25s;pointer-events:none}
+  .toast.show{opacity:1;transform:translateX(-50%)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-top:12px}
+  .pg{position:relative;background:var(--bg);border:2px solid var(--line);border-radius:12px;padding:6px;cursor:pointer;transition:.15s}
+  .pg.on{border-color:var(--acc);background:#7c9cff14}
+  .pg canvas{width:100%;height:auto;display:block;border-radius:6px;background:#fff}
+  .pg .cap{display:flex;justify-content:space-between;align-items:center;gap:4px;font-size:.8rem;margin-top:6px}
+  .pg .tags{color:var(--mute)}
+  .pg .chk{position:absolute;top:10px;right:10px;width:26px;height:26px;border-radius:50%;background:#000a;border:2px solid #fff8;display:grid;place-items:center;font-size:.85rem}
+  .pg.on .chk{background:var(--acc2);border-color:#fff}
+  .add{display:flex;gap:8px;margin-top:12px}
+  .add input{flex:1}
+  footer{color:var(--mute);font-size:.8rem;text-align:center;margin-top:18px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <img src="icon.svg" alt="">
+    <div>
+      <h1>Mi Markdown</h1>
+      <p>PDF y YouTube → Markdown · 100 % en tu dispositivo</p>
+    </div>
+  </header>
+
+  <div class="tabs" role="tablist">
+    <button class="on" data-tab="pdf">📄 PDF</button>
+    <button data-tab="yt">▶️ YouTube</button>
+  </div>
+
+  <!-- PDF -->
+  <section id="tab-pdf">
+    <div class="card">
+      <div class="drop" id="drop">
+        <div class="big">📄</div>
+        <b>Toca para elegir un PDF</b>
+        <small>o arrástralo aquí · no se sube a ningún sitio</small>
+      </div>
+      <input type="file" id="fileInput" accept="application/pdf,.pdf" class="hide">
+      <div class="opts">
+        <label><input type="checkbox" id="optRep" checked> Quitar encabezados y pies repetidos</label>
+        <label><input type="checkbox" id="optSep"> Marcar el número de página</label>
+        <label><input type="checkbox" id="optOcr" checked> OCR en páginas escaneadas</label>
+      </div>
+      <div class="bar hide" id="bar"><i></i></div>
+      <div class="msg" id="pdfMsg"></div>
+    </div>
+  </section>
+
+  <!-- YouTube -->
+  <section id="tab-yt" class="hide">
+    <div class="card">
+      <label class="f" for="ytTitle">Título (opcional)</label>
+      <input type="text" id="ytTitle" placeholder="Ej.: Cómo leer un gráfico de velas">
+      <label class="f" for="ytUrl">Enlace del vídeo (opcional)</label>
+      <input type="url" id="ytUrl" placeholder="https://youtu.be/…">
+      <label class="f" for="ytRaw">Pega aquí la transcripción</label>
+      <textarea id="ytRaw" rows="8" placeholder="0:00&#10;hola a todos y bienvenidos…"></textarea>
+      <div class="row"><button class="btn pri" id="ytGo">✨ Convertir a Markdown</button></div>
+      <details class="hint">
+        <summary>¿Cómo copio la transcripción?</summary>
+        <ol>
+          <li>Abre el vídeo en YouTube (mejor desde el ordenador).</li>
+          <li>Debajo del vídeo, abre la descripción y pulsa <b>«Mostrar transcripción»</b>.</li>
+          <li>Selecciona todo el texto del panel, cópialo y pégalo aquí.</li>
+        </ol>
+        Las marcas de tiempo (0:00, 1:23…) se quitan solas.
+      </details>
+      <div class="msg" id="ytMsg"></div>
+    </div>
+  </section>
+
+  <!-- Resultado -->
+  <section id="result" class="hide">
+    <div class="card">
+      <div class="file" id="resName"></div>
+      <div class="stats">
+        <div class="stat"><div class="n" id="stOrig">–</div><div class="l" id="stOrigL">Tokens original*</div></div>
+        <div class="stat"><div class="n" id="stMd">–</div><div class="l" id="stMdL">Tokens Markdown*</div></div>
+        <div class="stat save"><div class="n" id="stSave">–</div><div class="l">Ahorro</div></div>
+      </div>
+      <textarea id="out" rows="14" spellcheck="false"></textarea>
+      <div class="row">
+        <button class="btn pri" id="btnDl">⬇️ Descargar .md</button>
+        <button class="btn" id="btnShare">📤 Compartir</button>
+        <button class="btn" id="btnCopy">📋 Copiar</button>
+      </div>
+      <p class="hint" id="imgHint"></p>
+      <p class="hint">* Estimación orientativa. Para PDF se calcula el texto más el coste aproximado de procesar cada página como imagen (~1.500 tokens/página). Puedes editar el texto antes de descargarlo.</p>
+    </div>
+  </section>
+
+  <section id="imgs" class="hide">
+    <div class="card">
+      <b>🖼️ Imágenes, tablas y gráficos</b>
+      <p class="hint" style="margin-top:4px">Estas páginas tienen cosas que el Markdown puede perder o desordenar. Marca las que quieras mandar a Claude como imagen junto al .md (cada una suma ~1.600 tokens). Se guardan en un ZIP o se comparten todas juntas.</p>
+      <div class="row" style="margin-top:8px">
+        <button class="btn" id="selAll">Marcar todas</button>
+        <button class="btn" id="selNone">Ninguna</button>
+      </div>
+      <div class="grid" id="grid"></div>
+      <div class="add">
+        <input type="text" inputmode="numeric" id="addPg" placeholder="Añadir otra página (nº)">
+        <button class="btn" id="addBtn">➕</button>
+      </div>
+    </div>
+  </section>
+
+  <footer>Mi Markdown · Quinigrama · funciona sin conexión una vez instalada</footer>
+</div>
+<div class="toast" id="toast"></div>
+
+<script type="module">
+import { pdfToMarkdown, transcriptToMarkdown, estimarTokens, markdownFinal, TOKENS_IMAGEN } from './convert.js';
+
+// Librerías (versiones fijas; el service worker las guarda para usarlas sin conexión)
+const CDN = {
+  pdfjs: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/',
+  tesseract: 'https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js',
+  tessCore: 'https://cdn.jsdelivr.net/npm/tesseract.js-core@5.1.1',
+  tessLang: 'https://cdn.jsdelivr.net/npm/@tesseract.js-data/spa/4.0.0_best_int',
+  jszip: 'https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js',
+  ...(window.MI_MD_CDN || {})
+};
+const TOKENS_IMAGEN_PAGINA_PDF = 1500;
+const $ = id => document.getElementById(id);
+// Siempre con punto de miles (es-ES no lo pone en números de 4 cifras)
+const fmt = n => String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+
+let pdfjsLib = null, ocrWorker = null;
+let currentPdf = null;
+let current = { name: 'documento', origTokens: 0, label: '', esPdf: false };
+let elegidas = new Set();
+let digitos = 1;
+
+// ---------- Pestañas ----------
+document.querySelectorAll('.tabs button').forEach(b => b.onclick = () => {
+  document.querySelectorAll('.tabs button').forEach(x => x.classList.toggle('on', x === b));
+  $('tab-pdf').classList.toggle('hide', b.dataset.tab !== 'pdf');
+  $('tab-yt').classList.toggle('hide', b.dataset.tab !== 'yt');
+});
+
+// ---------- Carga de librerías ----------
+function loadScript(src) {
+  return new Promise((ok, ko) => { const s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = () => ko(new Error('No se pudo cargar ' + src)); document.head.appendChild(s); });
+}
+async function loadPdfjs() {
+  if (pdfjsLib) return pdfjsLib;
+  pdfjsLib = await import(CDN.pdfjs + 'pdf.min.mjs');
+  pdfjsLib.GlobalWorkerOptions.workerSrc = CDN.pdfjs + 'pdf.worker.min.mjs';
+  return pdfjsLib;
+}
+async function getOcr(msg) {
+  if (ocrWorker) return ocrWorker;
+  msg('Preparando el OCR (la primera vez descarga unos 6 MB)…');
+  if (!window.Tesseract) await loadScript(CDN.tesseract);
+  ocrWorker = await Tesseract.createWorker('spa', 1, {
+    corePath: CDN.tessCore, langPath: CDN.tessLang, workerPath: CDN.tesseractWorker || undefined,
+  });
+  return ocrWorker;
+}
+
+async function renderPage(page, maxLado, tipo = 'canvas') {
+  const vp1 = page.getViewport({ scale: 1 });
+  const scale = Math.min(4, maxLado / Math.max(vp1.width, vp1.height));
+  const vp = page.getViewport({ scale });
+  const c = document.createElement('canvas');
+  c.width = Math.round(vp.width); c.height = Math.round(vp.height);
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height);
+  await page.render({ canvasContext: ctx, viewport: vp }).promise;
+  return c;
+}
+
+// ---------- PDF ----------
+const drop = $('drop');
+drop.onclick = () => $('fileInput').click();
+$('fileInput').onchange = e => { const f = e.target.files[0]; if (f) convertPdf(f); e.target.value = ''; };
+['dragenter', 'dragover'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('over'); }));
+['dragleave', 'drop'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove('over'); }));
+drop.addEventListener('drop', e => { const f = [...e.dataTransfer.files].find(f => /pdf$/i.test(f.type) || /\.pdf$/i.test(f.name)); if (f) convertPdf(f); });
+
+async function convertPdf(file) {
+  const msgEl = $('pdfMsg'), bar = $('bar');
+  const msg = (t, cls = '') => { msgEl.className = 'msg ' + cls; msgEl.textContent = t; };
+  msg('Preparando…');
+  bar.classList.remove('hide'); bar.firstElementChild.style.width = '0';
+  $('imgs').classList.add('hide');
+  try {
+    const lib = await loadPdfjs();
+    if (currentPdf) { currentPdf.destroy(); currentPdf = null; }
+    const data = new Uint8Array(await file.arrayBuffer());
+    const task = lib.getDocument({ data, verbosity: 0 });
+    task.onPassword = (cb, reason) => {
+      const pw = prompt(reason === 2 ? 'Contraseña incorrecta. Inténtalo de nuevo:' : 'Este PDF tiene contraseña:');
+      if (pw === null) { task.destroy(); return; }
+      cb(pw);
+    };
+    const pdf = await task.promise;
+    currentPdf = pdf;
+    digitos = String(pdf.numPages).length;
+
+    const usarOcr = $('optOcr').checked;
+    const ocr = usarOcr ? async (page, n) => {
+      const w = await getOcr(t => msg(t));
+      msg(`🔍 Leyendo con OCR la página ${fmt(n)} de ${fmt(pdf.numPages)}… (tarda unos segundos)`);
+      const canvas = await renderPage(page, 2200);
+      const { data } = await w.recognize(canvas);
+      return data.text;
+    } : null;
+
+    const res = await pdfToMarkdown(pdf, { OPS: lib.OPS, ocr, quitarRepetidos: $('optRep').checked, separadorPaginas: $('optSep').checked },
+      (p, n, fase) => { bar.firstElementChild.style.width = (p / n * 100) + '%'; if (fase === 'texto') msg(`Leyendo página ${fmt(p)} de ${fmt(n)}…`); });
+
+    if (res.escaneado) {
+      msg(usarOcr ? '⚠️ No se ha podido sacar texto, ni siquiera con OCR.' : '⚠️ Este PDF parece escaneado (fotos de páginas). Activa «OCR en páginas escaneadas» y vuelve a cargarlo.', 'warn');
+      $('result').classList.add('hide');
+      return;
+    }
+    elegidas = new Set();
+    showResult(res.markdown, file.name.replace(/\.pdf$/i, ''),
+      estimarTokens(res.markdown) + res.paginas * TOKENS_IMAGEN_PAGINA_PDF,
+      `${fmt(res.paginas)} página${res.paginas === 1 ? '' : 's'}`, true);
+    msg(res.paginasOcr ? `✅ Listo · ${fmt(res.paginasOcr)} página${res.paginasOcr === 1 ? '' : 's'} leída${res.paginasOcr === 1 ? '' : 's'} con OCR (revisa el texto, puede tener fallos)` : '✅ Listo');
+    await showPages(res.destacadas);
+  } catch (err) {
+    console.error(err);
+    msg(!navigator.onLine
+      ? 'No se pudo cargar lo necesario. Abre la app una vez con conexión para que quede guardado.'
+      : 'No se pudo leer el PDF: ' + (err.message || err), 'err');
+  } finally {
+    setTimeout(() => bar.classList.add('hide'), 600);
+  }
+}
+
+// ---------- Selector de páginas con imágenes / tablas ----------
+const tagsOf = d => [d.imagen && !d.ocr && '🖼️ Imagen', d.grafico && '📈 Gráfico', d.tabla && '📊 Tabla', d.ocr && '🔍 Escaneada'].filter(Boolean).join(' · ') || '📄 Añadida';
+
+async function showPages(destacadas) {
+  $('grid').innerHTML = '';
+  $('imgs').classList.toggle('hide', !currentPdf);
+  for (const d of destacadas) await addThumb(d);
+  $('imgHint').textContent = destacadas.length
+    ? `🖼️ Hay ${fmt(destacadas.length)} página${destacadas.length === 1 ? '' : 's'} con imágenes, tablas o gráficos: más abajo puedes elegir cuáles adjuntar.`
+    : '';
+}
+
+async function addThumb(d) {
+  if ($('grid').querySelector(`[data-n="${d.n}"]`)) return;
+  const el = document.createElement('div');
+  el.className = 'pg'; el.dataset.n = d.n;
+  const page = await currentPdf.getPage(d.n);
+  const c = await renderPage(page, 360);
+  el.appendChild(c);
+  el.insertAdjacentHTML('beforeend', `<div class="chk">✓</div><div class="cap"><b>Pág. ${d.n}</b><span class="tags">${tagsOf(d)}</span></div>`);
+  el.onclick = () => { elegidas.has(d.n) ? elegidas.delete(d.n) : elegidas.add(d.n); refreshSel(); };
+  $('grid').appendChild(el);
+  refreshSel();
+}
+function refreshSel() {
+  $('grid').querySelectorAll('.pg').forEach(el => el.classList.toggle('on', elegidas.has(+el.dataset.n)));
+  updateStats();
+}
+$('selAll').onclick = () => { $('grid').querySelectorAll('.pg').forEach(el => elegidas.add(+el.dataset.n)); refreshSel(); };
+$('selNone').onclick = () => { elegidas.clear(); refreshSel(); };
+$('addBtn').onclick = async () => {
+  const n = parseInt($('addPg').value, 10);
+  if (!currentPdf || !(n >= 1 && n <= currentPdf.numPages)) { toast(`Elige una página entre 1 y ${currentPdf ? fmt(currentPdf.numPages) : '?'}`); return; }
+  elegidas.add(n);
+  await addThumb({ n });
+  refreshSel();
+  $('addPg').value = '';
+};
+
+const nombreImg = n => `pagina-${String(n).padStart(digitos, '0')}.jpg`;
+async function imagenesElegidas() {
+  const files = [];
+  for (const n of [...elegidas].sort((a, b) => a - b)) {
+    const page = await currentPdf.getPage(n);
+    const c = await renderPage(page, 1568); // tamaño máximo que Claude aprovecha
+    const blob = await new Promise(r => c.toBlob(r, 'image/jpeg', 0.85));
+    files.push(new File([blob], nombreImg(n), { type: 'image/jpeg' }));
+  }
+  return files;
+}
+
+// ---------- YouTube ----------
+$('ytGo').onclick = () => {
+  const raw = $('ytRaw').value;
+  const msg = $('ytMsg');
+  const md = transcriptToMarkdown(raw, { titulo: $('ytTitle').value, url: $('ytUrl').value });
+  if (!md) { msg.className = 'msg warn'; msg.textContent = 'Pega primero la transcripción 🙂'; return; }
+  msg.className = 'msg'; msg.textContent = '✅ Listo';
+  $('imgs').classList.add('hide'); $('imgHint').textContent = '';
+  elegidas = new Set();
+  const name = ($('ytTitle').value.trim() || 'transcripcion-youtube').replace(/[\\/:*?"<>|]+/g, '-');
+  showResult(md, name, estimarTokens(raw), 'transcripción pegada', false);
+};
+
+// ---------- Resultado ----------
+function showResult(md, name, origTokens, label, esPdf) {
+  current = { name, origTokens, label, esPdf };
+  $('out').value = md;
+  $('resName').textContent = `📝 ${name}.md · ${label}`;
+  $('stOrigL').textContent = esPdf ? 'Tokens PDF*' : 'Tokens texto pegado*';
+  updateStats();
+  $('result').classList.remove('hide');
+  $('result').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+const textoFinal = () => current.esPdf ? markdownFinal($('out').value, [...elegidas], nombreImg) : $('out').value;
+function updateStats() {
+  const md = estimarTokens(textoFinal()) + (current.esPdf ? elegidas.size * TOKENS_IMAGEN : 0);
+  $('stOrig').textContent = fmt(current.origTokens);
+  $('stMd').textContent = fmt(md);
+  $('stMdL') && ($('stMdL').textContent = elegidas.size ? `Tokens .md + ${fmt(elegidas.size)} img*` : 'Tokens Markdown*');
+  const save = current.origTokens ? Math.max(0, 1 - md / current.origTokens) : 0;
+  $('stSave').textContent = Math.round(save * 100) + ' %';
+  $('btnDl').textContent = elegidas.size ? '⬇️ Descargar ZIP (.md + imágenes)' : '⬇️ Descargar .md';
+}
+$('out').addEventListener('input', updateStats);
+
+const mdFile = type => new File([textoFinal()], current.name + '.md', { type });
+function descargar(blob, nombre) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = nombre; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 3000);
+}
+$('btnDl').onclick = async () => {
+  if (!elegidas.size) return descargar(mdFile('text/markdown'), current.name + '.md');
+  toast('Preparando el ZIP…');
+  try {
+    if (!window.JSZip) await loadScript(CDN.jszip);
+    const zip = new JSZip();
+    zip.file(current.name + '.md', textoFinal());
+    for (const f of await imagenesElegidas()) zip.file(f.name, f);
+    descargar(await zip.generateAsync({ type: 'blob' }), current.name + '.zip');
+  } catch (e) { toast('No se pudo crear el ZIP: ' + e.message); }
+};
+$('btnCopy').onclick = async () => {
+  try { await navigator.clipboard.writeText(textoFinal()); }
+  catch { $('out').select(); document.execCommand('copy'); }
+  toast(elegidas.size ? '📋 Texto copiado (las imágenes, con Compartir o ZIP)' : '📋 Copiado');
+};
+$('btnShare').onclick = async () => {
+  const imgs = elegidas.size ? await imagenesElegidas() : [];
+  for (const type of ['text/markdown', 'text/plain']) {
+    const files = [mdFile(type), ...imgs];
+    if (navigator.canShare && navigator.canShare({ files })) {
+      try { await navigator.share({ files, title: current.name }); } catch (_) {}
+      return;
+    }
+  }
+  if (navigator.share && !imgs.length) { try { await navigator.share({ text: textoFinal() }); } catch (_) {} return; }
+  toast('Tu navegador no permite compartir: usa Descargar');
+};
+
+function toast(t) { const el = $('toast'); el.textContent = t; el.classList.add('show'); clearTimeout(toast.t); toast.t = setTimeout(() => el.classList.remove('show'), 2200); }
+
+// ---------- PWA ----------
+if ('serviceWorker' in navigator && !window.MI_MD_CDN) navigator.serviceWorker.register('sw.js');
+</script>
+</body>
+</html>
