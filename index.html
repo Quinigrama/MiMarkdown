@@ -30,7 +30,9 @@
   header img{width:44px;height:44px;border-radius:12px}
   header h1{font-size:1.45rem;margin:0;letter-spacing:-.01em}
   header p{margin:0;color:var(--mute);font-size:.88rem}
-  header .theme{margin-left:auto;all:unset;margin-left:auto;cursor:pointer;font-size:1.3rem;width:42px;height:42px;display:grid;place-items:center;border-radius:12px;background:var(--card);border:1px solid var(--line);box-shadow:var(--shadow)}
+  header .theme svg{width:20px;height:20px;stroke:var(--acc)}
+  header .acciones{margin-left:auto;display:flex;gap:8px}
+  header .theme{all:unset;cursor:pointer;font-size:1.3rem;width:42px;height:42px;display:grid;place-items:center;border-radius:12px;background:var(--card);border:1px solid var(--line);box-shadow:var(--shadow)}
   .tabs{display:grid;grid-template-columns:1fr 1fr;gap:6px;background:var(--card2);padding:6px;border-radius:14px;margin-bottom:16px}
   .tabs button{all:unset;text-align:center;padding:10px;border-radius:10px;cursor:pointer;color:var(--mute);font-weight:600}
   .tabs button.on{background:var(--card);color:var(--txt);box-shadow:var(--shadow)}
@@ -89,7 +91,12 @@
       <h1>Mi Markdown</h1>
       <p>PDF y YouTube → Markdown · 100 % en tu dispositivo</p>
     </div>
-    <button class="theme" id="themeBtn" title="Cambiar tema claro / oscuro">🌙</button>
+    <div class="acciones">
+      <button class="theme hide" id="installBtn" title="Instalar la app" aria-label="Instalar la app">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
+      </button>
+      <button class="theme" id="themeBtn" title="Cambiar tema claro / oscuro">🌙</button>
+    </div>
   </header>
 
   <div class="tabs" role="tablist">
@@ -434,6 +441,31 @@ function aplicarTema(t) {
 }
 aplicarTema(document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light');
 $('themeBtn').onclick = () => aplicarTema(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark');
+
+// ---------- Botón de instalar ----------
+// Solo se muestra si la app aún no está instalada.
+let avisoInstalar = null;
+const yaInstalada = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+const esIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();             // guardamos el aviso para lanzarlo con nuestro botón
+  avisoInstalar = e;
+  if (!yaInstalada()) $('installBtn').classList.remove('hide');
+});
+if (esIOS && !yaInstalada()) $('installBtn').classList.remove('hide'); // en iPhone no hay aviso automático
+$('installBtn').onclick = async () => {
+  if (avisoInstalar) {
+    avisoInstalar.prompt();
+    const { outcome } = await avisoInstalar.userChoice;
+    avisoInstalar = null;
+    if (outcome === 'accepted') $('installBtn').classList.add('hide');
+  } else if (esIOS) {
+    toast('En Safari: botón Compartir ⬆️ → «Añadir a pantalla de inicio»');
+  } else {
+    toast('Menú ⋮ del navegador → «Instalar app» o «Añadir a pantalla de inicio»');
+  }
+};
+window.addEventListener('appinstalled', () => { $('installBtn').classList.add('hide'); toast('✅ App instalada'); });
 
 // ---------- PWA ----------
 if ('serviceWorker' in navigator && !window.MI_MD_CDN) navigator.serviceWorker.register('sw.js');
