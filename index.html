@@ -5,14 +5,22 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Mi Markdown</title>
 <meta name="description" content="Convierte PDF y transcripciones de YouTube a Markdown, 100 % en local, para gastar menos tokens con Claude.">
-<meta name="theme-color" content="#14161c">
+<meta name="theme-color" content="#f3f5fa">
+<script>try{if(localStorage.getItem('mimd-tema')==='dark')document.documentElement.dataset.theme='dark'}catch(e){}</script>
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon-192.png">
 <style>
+  /* Tema claro (por defecto) */
   :root{
+    --bg:#f3f5fa; --card:#ffffff; --card2:#eef1f8; --line:#dce1ec; --txt:#1c2130; --mute:#667085;
+    --field:#f8f9fc; --acc:#4a63d8; --acc2:#4a63d8; --ok:#1f9d63; --warn:#b26b00; --err:#d64545; --r:16px;
+    --shadow:0 1px 3px #1c213014, 0 4px 14px #1c21300d;
+  }
+  /* Tema oscuro (botón 🌙) */
+  :root[data-theme=dark]{
     --bg:#14161c; --card:#1d2029; --card2:#252935; --line:#2f3443; --txt:#e9ebf1; --mute:#9aa1b2;
-    --acc:#7c9cff; --acc2:#5b7cf0; --ok:#4cc38a; --warn:#f0b54a; --err:#ef6b6b; --r:16px;
+    --field:#14161c; --acc:#7c9cff; --acc2:#5b7cf0; --ok:#4cc38a; --warn:#f0b54a; --err:#ef6b6b; --shadow:none;
   }
   *{box-sizing:border-box}
   html,body{margin:0;background:var(--bg);color:var(--txt);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
@@ -22,10 +30,12 @@
   header img{width:44px;height:44px;border-radius:12px}
   header h1{font-size:1.45rem;margin:0;letter-spacing:-.01em}
   header p{margin:0;color:var(--mute);font-size:.88rem}
-  .tabs{display:grid;grid-template-columns:1fr 1fr;gap:6px;background:var(--card);padding:6px;border-radius:14px;margin-bottom:16px}
+  header .theme{margin-left:auto;all:unset;margin-left:auto;cursor:pointer;font-size:1.3rem;width:42px;height:42px;display:grid;place-items:center;border-radius:12px;background:var(--card);border:1px solid var(--line);box-shadow:var(--shadow)}
+  .tabs{display:grid;grid-template-columns:1fr 1fr;gap:6px;background:var(--card2);padding:6px;border-radius:14px;margin-bottom:16px}
   .tabs button{all:unset;text-align:center;padding:10px;border-radius:10px;cursor:pointer;color:var(--mute);font-weight:600}
-  .tabs button.on{background:var(--card2);color:var(--txt);box-shadow:0 1px 0 #ffffff10 inset}
-  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px;margin-bottom:14px}
+  .tabs button.on{background:var(--card);color:var(--txt);box-shadow:var(--shadow)}
+  :root[data-theme=dark] .tabs{background:var(--card)} :root[data-theme=dark] .tabs button.on{background:var(--card2)}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px;margin-bottom:14px;box-shadow:var(--shadow)}
   .drop{border:2px dashed var(--line);border-radius:var(--r);padding:28px 16px;text-align:center;cursor:pointer;transition:.15s}
   .drop.over{border-color:var(--acc);background:#7c9cff12}
   .drop .big{font-size:2.2rem}
@@ -34,7 +44,7 @@
   .opts{display:flex;flex-wrap:wrap;gap:8px 18px;margin-top:12px;font-size:.92rem;color:var(--mute)}
   .opts label{display:flex;align-items:center;gap:6px;cursor:pointer}
   input[type=checkbox]{accent-color:var(--acc);width:18px;height:18px}
-  input[type=text],input[type=url],textarea{width:100%;background:var(--bg);color:var(--txt);border:1px solid var(--line);border-radius:12px;padding:11px 12px;font:inherit}
+  input[type=text],input[type=url],textarea{width:100%;background:var(--field);color:var(--txt);border:1px solid var(--line);border-radius:12px;padding:11px 12px;font:inherit}
   textarea{resize:vertical;font:14px/1.5 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
   label.f{display:block;font-size:.85rem;color:var(--mute);margin:10px 0 4px}
   .btn{all:unset;display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:11px 16px;border-radius:12px;background:var(--card2);border:1px solid var(--line);cursor:pointer;font-weight:600;font-size:.95rem}
@@ -42,12 +52,12 @@
   .btn:active{transform:scale(.98)}
   .row{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
   .row .btn{flex:1 1 auto}
-  .bar{height:8px;background:var(--bg);border-radius:8px;overflow:hidden;margin-top:12px}
+  .bar{height:8px;background:var(--card2);border-radius:8px;overflow:hidden;margin-top:12px}
   .bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--acc2),var(--acc));transition:width .2s}
   .msg{font-size:.92rem;margin-top:10px;color:var(--mute)}
   .msg.err{color:var(--err)} .msg.warn{color:var(--warn)}
   .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
-  .stat{background:var(--bg);border-radius:12px;padding:10px;text-align:center}
+  .stat{background:var(--card2);border-radius:12px;padding:10px;text-align:center}
   .stat .n{font-size:1.25rem;font-weight:700}
   .stat .l{font-size:.75rem;color:var(--mute)}
   .stat.save .n{color:var(--ok)}
@@ -56,10 +66,10 @@
   .hint ol{margin:6px 0 0;padding-left:20px}
   details summary{cursor:pointer;color:var(--acc);font-size:.9rem}
   .hide{display:none!important}
-  .toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));transform:translateX(-50%) translateY(30px);background:var(--card2);border:1px solid var(--line);padding:10px 16px;border-radius:12px;opacity:0;transition:.25s;pointer-events:none}
+  .toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));transform:translateX(-50%) translateY(30px);background:var(--txt);color:var(--card);border:1px solid var(--line);padding:10px 16px;border-radius:12px;opacity:0;transition:.25s;pointer-events:none}
   .toast.show{opacity:1;transform:translateX(-50%)}
   .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-top:12px}
-  .pg{position:relative;background:var(--bg);border:2px solid var(--line);border-radius:12px;padding:6px;cursor:pointer;transition:.15s}
+  .pg{position:relative;background:var(--card2);border:2px solid var(--line);border-radius:12px;padding:6px;cursor:pointer;transition:.15s}
   .pg.on{border-color:var(--acc);background:#7c9cff14}
   .pg canvas{width:100%;height:auto;display:block;border-radius:6px;background:#fff}
   .pg .cap{display:flex;justify-content:space-between;align-items:center;gap:4px;font-size:.8rem;margin-top:6px}
@@ -79,6 +89,7 @@
       <h1>Mi Markdown</h1>
       <p>PDF y YouTube → Markdown · 100 % en tu dispositivo</p>
     </div>
+    <button class="theme" id="themeBtn" title="Cambiar tema claro / oscuro">🌙</button>
   </header>
 
   <div class="tabs" role="tablist">
@@ -413,6 +424,16 @@ $('btnShare').onclick = async () => {
 };
 
 function toast(t) { const el = $('toast'); el.textContent = t; el.classList.add('show'); clearTimeout(toast.t); toast.t = setTimeout(() => el.classList.remove('show'), 2200); }
+
+// ---------- Tema claro / oscuro ----------
+function aplicarTema(t) {
+  if (t === 'dark') document.documentElement.dataset.theme = 'dark'; else delete document.documentElement.dataset.theme;
+  $('themeBtn').textContent = t === 'dark' ? '☀️' : '🌙';
+  document.querySelector('meta[name=theme-color]').content = t === 'dark' ? '#14161c' : '#f3f5fa';
+  try { localStorage.setItem('mimd-tema', t); } catch (_) {}
+}
+aplicarTema(document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light');
+$('themeBtn').onclick = () => aplicarTema(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark');
 
 // ---------- PWA ----------
 if ('serviceWorker' in navigator && !window.MI_MD_CDN) navigator.serviceWorker.register('sw.js');
