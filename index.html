@@ -33,7 +33,7 @@
   header .theme svg{width:20px;height:20px;stroke:var(--acc)}
   header .acciones{margin-left:auto;display:flex;gap:8px}
   header .theme{all:unset;cursor:pointer;font-size:1.3rem;width:42px;height:42px;display:grid;place-items:center;border-radius:12px;background:var(--card);border:1px solid var(--line);box-shadow:var(--shadow)}
-  .tabs{display:grid;grid-template-columns:1fr 1fr;gap:6px;background:var(--card2);padding:6px;border-radius:14px;margin-bottom:16px}
+  .tabs{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;background:var(--card2);padding:6px;border-radius:14px;margin-bottom:16px}
   .tabs button{all:unset;text-align:center;padding:10px;border-radius:10px;cursor:pointer;color:var(--mute);font-weight:600}
   .tabs button.on{background:var(--card);color:var(--txt);box-shadow:var(--shadow)}
   :root[data-theme=dark] .tabs{background:var(--card)} :root[data-theme=dark] .tabs button.on{background:var(--card2)}
@@ -80,6 +80,22 @@
   .pg.on .chk{background:var(--acc2);border-color:#fff}
   .add{display:flex;gap:8px;margin-top:12px}
   .add input{flex:1}
+  body[data-tab=unir] #result, body[data-tab=unir] #imgs{display:none}
+  .lista{display:flex;flex-direction:column;gap:8px;margin-top:12px}
+  .item{display:grid;grid-template-columns:20px 52px 1fr;align-items:center;gap:6px 10px;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:8px}
+  .item .mini{width:52px;height:52px;flex:none;border-radius:8px;background:#fff;object-fit:cover;border:1px solid var(--line);display:grid;place-items:center;overflow:hidden}
+  .item .mini canvas,.item .mini img{max-width:100%;max-height:100%;object-fit:contain}
+  .item .info{flex:1;min-width:0}
+  .item .info b{display:block;font-size:.9rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .item .info small{color:var(--mute);font-size:.78rem}
+  .item .acc{grid-column:3;display:flex;gap:6px;justify-content:flex-end}
+  .item .acc button{all:unset;cursor:pointer;width:32px;height:32px;display:grid;place-items:center;border-radius:8px;background:var(--card);border:1px solid var(--line);font-size:.9rem}
+  .item .acc button:disabled{opacity:.3;cursor:default}
+  .num{text-align:center;color:var(--mute);font-weight:700;font-size:.85rem}
+  select{background:var(--field);color:var(--txt);border:1px solid var(--line);border-radius:10px;padding:8px 10px;font:inherit}
+  .opts2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+  .opts2 label.f{margin:0 0 4px}
+  .opts2 select{width:100%}
   footer{color:var(--mute);font-size:.8rem;text-align:center;margin-top:18px}
 </style>
 </head>
@@ -102,6 +118,7 @@
   <div class="tabs" role="tablist">
     <button class="on" data-tab="pdf">📄 PDF</button>
     <button data-tab="yt">▶️ YouTube</button>
+    <button data-tab="unir">🧩 Unir</button>
   </div>
 
   <!-- PDF -->
@@ -143,6 +160,50 @@
         Las marcas de tiempo (0:00, 1:23…) se quitan solas.
       </details>
       <div class="msg" id="ytMsg"></div>
+    </div>
+  </section>
+
+  <!-- Unir PDF e imágenes -->
+  <section id="tab-unir" class="hide">
+    <div class="card">
+      <div class="drop" id="dropU">
+        <div class="big">🧩</div>
+        <b>Añade PDF y/o imágenes</b>
+        <small>puedes elegir varios a la vez · se unen en el orden de la lista</small>
+      </div>
+      <input type="file" id="fileU" accept="application/pdf,.pdf,image/*" multiple class="hide">
+      <div class="lista" id="listaU"></div>
+      <div id="panelU" class="hide">
+        <div class="row" style="margin-top:10px">
+          <button class="btn" id="ordNombre">🔤 Ordenar por nombre</button>
+          <button class="btn" id="vaciarU">🗑️ Vaciar</button>
+        </div>
+        <div class="opts2">
+          <div>
+            <label class="f" for="tamU">Páginas de las imágenes</label>
+            <select id="tamU">
+              <option value="a4">A4 (ajustada)</option>
+              <option value="orig">Tamaño de la imagen</option>
+            </select>
+          </div>
+          <div>
+            <label class="f" for="calU">Calidad de las imágenes</label>
+            <select id="calU">
+              <option value="media">Media (pesa menos)</option>
+              <option value="alta">Alta</option>
+            </select>
+          </div>
+        </div>
+        <label class="f" for="nomU">Nombre del PDF</label>
+        <input type="text" id="nomU" value="documento-unido">
+        <div class="row"><button class="btn pri" id="crearU">🧩 Crear PDF</button></div>
+        <div class="msg" id="msgU"></div>
+        <div class="row hide" id="salidaU">
+          <button class="btn pri" id="dlU">⬇️ Descargar PDF</button>
+          <button class="btn" id="shareU">📤 Compartir</button>
+          <button class="btn" id="mdU">📝 Pasar a Markdown</button>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -196,6 +257,7 @@ const CDN = {
   tessCore: 'https://cdn.jsdelivr.net/npm/tesseract.js-core@5.1.1',
   tessLang: 'https://cdn.jsdelivr.net/npm/@tesseract.js-data/spa/4.0.0_best_int',
   jszip: 'https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js',
+  pdflib: 'https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js',
   ...(window.MI_MD_CDN || {})
 };
 const TOKENS_IMAGEN_PAGINA_PDF = 1500;
@@ -212,9 +274,10 @@ let digitos = 1;
 // ---------- Pestañas ----------
 document.querySelectorAll('.tabs button').forEach(b => b.onclick = () => {
   document.querySelectorAll('.tabs button').forEach(x => x.classList.toggle('on', x === b));
-  $('tab-pdf').classList.toggle('hide', b.dataset.tab !== 'pdf');
-  $('tab-yt').classList.toggle('hide', b.dataset.tab !== 'yt');
+  ['pdf', 'yt', 'unir'].forEach(t => $('tab-' + t).classList.toggle('hide', b.dataset.tab !== t));
+  document.body.dataset.tab = b.dataset.tab;
 });
+const irAPestana = t => document.querySelector(`.tabs button[data-tab="${t}"]`).click();
 
 // ---------- Carga de librerías ----------
 function loadScript(src) {
@@ -282,7 +345,9 @@ async function convertPdf(file) {
       msg(`🔍 Leyendo con OCR la página ${fmt(n)} de ${fmt(pdf.numPages)}… (tarda unos segundos)`);
       const canvas = await renderPage(page, 2200);
       const { data } = await w.recognize(canvas);
-      return data.text;
+      // Si la página es una foto o un dibujo sin texto, el OCR solo «inventa» letras: lo descartamos
+      const letras = (data.text.match(/[a-záéíóúñü]{3,}/gi) || []).length;
+      return data.confidence >= 45 && letras >= 3 ? data.text : '';
     } : null;
 
     const res = await pdfToMarkdown(pdf, { OPS: lib.OPS, ocr, quitarRepetidos: $('optRep').checked, separadorPaginas: $('optSep').checked },
@@ -431,6 +496,167 @@ $('btnShare').onclick = async () => {
 };
 
 function toast(t) { const el = $('toast'); el.textContent = t; el.classList.add('show'); clearTimeout(toast.t); toast.t = setTimeout(() => el.classList.remove('show'), 2200); }
+
+// ---------- Unir PDF e imágenes ----------
+let itemsU = [], sigId = 1, pdfUnido = null;
+const dropU = $('dropU');
+dropU.onclick = () => $('fileU').click();
+$('fileU').onchange = e => { anadirU([...e.target.files]); e.target.value = ''; };
+['dragenter', 'dragover'].forEach(ev => dropU.addEventListener(ev, e => { e.preventDefault(); dropU.classList.add('over'); }));
+['dragleave', 'drop'].forEach(ev => dropU.addEventListener(ev, e => { e.preventDefault(); dropU.classList.remove('over'); }));
+dropU.addEventListener('drop', e => anadirU([...e.dataTransfer.files]));
+
+const esPdf = f => /pdf$/i.test(f.type) || /\.pdf$/i.test(f.name);
+const esImg = f => /^image\//i.test(f.type) || /\.(jpe?g|png|webp|gif|bmp|heic|heif|avif)$/i.test(f.name);
+const pesoTxt = b => b > 1048576 ? (b / 1048576).toFixed(1).replace('.', ',') + ' MB' : fmt(b / 1024) + ' KB';
+
+async function anadirU(files) {
+  const validos = files.filter(f => esPdf(f) || esImg(f));
+  if (validos.length < files.length) toast('Algunos archivos no son PDF ni imagen y se han ignorado');
+  for (const f of validos) {
+    const it = { id: sigId++, file: f, tipo: esPdf(f) ? 'pdf' : 'img', paginas: 1, rot: 0, mini: null, error: '' };
+    itemsU.push(it);
+    pintarU();
+    try {
+      if (it.tipo === 'pdf') {
+        const lib = await loadPdfjs();
+        const doc = await lib.getDocument({ data: new Uint8Array(await f.arrayBuffer()), verbosity: 0 }).promise;
+        it.paginas = doc.numPages;
+        it.mini = await renderPage(await doc.getPage(1), 120);
+        doc.destroy();
+      } else {
+        const img = new Image();
+        img.src = URL.createObjectURL(f);
+        await img.decode();
+        it.mini = img;
+      }
+    } catch (e) {
+      it.error = /password/i.test(e.name + e.message) ? 'tiene contraseña' : 'no se puede leer';
+    }
+    pintarU();
+  }
+}
+
+function pintarU() {
+  const lista = $('listaU');
+  lista.innerHTML = '';
+  itemsU.forEach((it, i) => {
+    const el = document.createElement('div');
+    el.className = 'item';
+    const detalle = it.error ? `⚠️ ${it.error}` :
+      it.tipo === 'pdf' ? `📄 PDF · ${fmt(it.paginas)} pág.` : `🖼️ Imagen`;
+    el.innerHTML = `<div class="num">${i + 1}</div><div class="mini"></div>
+      <div class="info"><b></b><small>${detalle} · ${pesoTxt(it.file.size)}${it.rot ? ' · ↻ ' + it.rot + '°' : ''}</small></div>
+      <div class="acc">
+        <button title="Subir" ${i === 0 ? 'disabled' : ''}>↑</button>
+        <button title="Bajar" ${i === itemsU.length - 1 ? 'disabled' : ''}>↓</button>
+        <button title="Girar 90°">↻</button>
+        <button title="Quitar">✕</button>
+      </div>`;
+    el.querySelector('b').textContent = it.file.name;
+    if (it.mini) {
+      const m = it.mini.tagName === 'CANVAS' ? it.mini : it.mini.cloneNode();
+      m.style.transform = `rotate(${it.rot}deg)`;
+      el.querySelector('.mini').appendChild(m);
+    } else el.querySelector('.mini').textContent = it.error ? '⚠️' : '⏳';
+    const [up, down, rot, del] = el.querySelectorAll('.acc button');
+    up.onclick = () => { [itemsU[i - 1], itemsU[i]] = [itemsU[i], itemsU[i - 1]]; pintarU(); };
+    down.onclick = () => { [itemsU[i + 1], itemsU[i]] = [itemsU[i], itemsU[i + 1]]; pintarU(); };
+    rot.onclick = () => { it.rot = (it.rot + 90) % 360; pintarU(); };
+    del.onclick = () => { itemsU.splice(i, 1); pintarU(); };
+    lista.appendChild(el);
+  });
+  $('panelU').classList.toggle('hide', !itemsU.length);
+  $('salidaU').classList.add('hide');
+  $('msgU').textContent = '';
+  pdfUnido = null;
+  const total = itemsU.reduce((a, it) => a + (it.error ? 0 : it.paginas), 0);
+  $('crearU').textContent = `🧩 Crear PDF (${fmt(total)} página${total === 1 ? '' : 's'})`;
+}
+
+$('ordNombre').onclick = () => {
+  itemsU.sort((a, b) => a.file.name.localeCompare(b.file.name, 'es', { numeric: true, sensitivity: 'base' }));
+  pintarU();
+};
+$('vaciarU').onclick = () => { itemsU = []; pintarU(); };
+
+// Imagen → JPEG (girada y reducida si hace falta)
+async function imagenAJpeg(it, calidad) {
+  const maxLado = calidad === 'alta' ? 3500 : 2000;
+  let fuente;
+  try { fuente = await createImageBitmap(it.file, { imageOrientation: 'from-image' }); }
+  catch { fuente = it.mini; } // p. ej. HEIC en Safari: usamos la imagen ya decodificada
+  const w0 = fuente.width || fuente.naturalWidth, h0 = fuente.height || fuente.naturalHeight;
+  const k = Math.min(1, maxLado / Math.max(w0, h0));
+  const w = Math.round(w0 * k), h = Math.round(h0 * k);
+  const girada = it.rot === 90 || it.rot === 270;
+  const c = document.createElement('canvas');
+  c.width = girada ? h : w; c.height = girada ? w : h;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height);
+  ctx.translate(c.width / 2, c.height / 2);
+  ctx.rotate(it.rot * Math.PI / 180);
+  ctx.drawImage(fuente, -w / 2, -h / 2, w, h);
+  const blob = await new Promise(r => c.toBlob(r, 'image/jpeg', calidad === 'alta' ? 0.92 : 0.8));
+  return { bytes: new Uint8Array(await blob.arrayBuffer()), w: c.width, h: c.height };
+}
+
+$('crearU').onclick = async () => {
+  const msg = (t, cls = '') => { $('msgU').className = 'msg ' + cls; $('msgU').textContent = t; };
+  const validos = itemsU.filter(it => !it.error);
+  if (!validos.length) return msg('No hay archivos válidos para unir', 'warn');
+  try {
+    msg('Preparando…');
+    if (!window.PDFLib) await loadScript(CDN.pdflib);
+    const { PDFDocument, degrees } = PDFLib;
+    const out = await PDFDocument.create();
+    const tam = $('tamU').value, cal = $('calU').value;
+    for (let i = 0; i < validos.length; i++) {
+      const it = validos[i];
+      msg(`Añadiendo ${fmt(i + 1)} de ${fmt(validos.length)}: ${it.file.name}`);
+      if (it.tipo === 'pdf') {
+        const src = await PDFDocument.load(await it.file.arrayBuffer(), { ignoreEncryption: true });
+        const pags = await out.copyPages(src, src.getPageIndices());
+        for (const pg of pags) {
+          if (it.rot) pg.setRotation(degrees((pg.getRotation().angle + it.rot) % 360));
+          out.addPage(pg);
+        }
+      } else {
+        const { bytes, w, h } = await imagenAJpeg(it, cal);
+        const img = await out.embedJpg(bytes);
+        if (tam === 'a4') {
+          const [W, H] = w > h ? [841.89, 595.28] : [595.28, 841.89];
+          const m = 20, k = Math.min((W - 2 * m) / w, (H - 2 * m) / h);
+          const page = out.addPage([W, H]);
+          page.drawImage(img, { x: (W - w * k) / 2, y: (H - h * k) / 2, width: w * k, height: h * k });
+        } else {
+          const k = Math.min(0.75, 1400 / Math.max(w, h));
+          const page = out.addPage([w * k, h * k]);
+          page.drawImage(img, { x: 0, y: 0, width: w * k, height: h * k });
+        }
+      }
+    }
+    out.setTitle($('nomU').value || 'documento-unido');
+    out.setProducer('Mi Markdown');
+    pdfUnido = await out.save();
+    msg(`✅ PDF creado: ${fmt(out.getPageCount())} páginas · ${pesoTxt(pdfUnido.length)}`);
+    $('salidaU').classList.remove('hide');
+  } catch (e) {
+    console.error(e);
+    msg('No se pudo crear el PDF: ' + (e.message || e), 'err');
+  }
+};
+
+const nombreU = () => (($('nomU').value || 'documento-unido').trim().replace(/[\\/:*?"<>|]+/g, '-').replace(/\.pdf$/i, '')) + '.pdf';
+const archivoU = () => new File([pdfUnido], nombreU(), { type: 'application/pdf' });
+$('dlU').onclick = () => pdfUnido && descargar(archivoU(), nombreU());
+$('shareU').onclick = async () => {
+  if (!pdfUnido) return;
+  const f = archivoU();
+  if (navigator.canShare && navigator.canShare({ files: [f] })) { try { await navigator.share({ files: [f], title: f.name }); } catch (_) {} }
+  else toast('Tu navegador no permite compartir: usa Descargar');
+};
+$('mdU').onclick = () => { if (!pdfUnido) return; irAPestana('pdf'); convertPdf(archivoU()); };
 
 // ---------- Tema claro / oscuro ----------
 function aplicarTema(t) {

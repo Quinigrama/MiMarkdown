@@ -8,6 +8,7 @@ Convierte **PDF** y **transcripciones de YouTube** a **Markdown** directamente e
 - Convierte las tablas sencillas en tablas Markdown
 - **OCR** (Tesseract.js) para páginas escaneadas, también en local
 - Detecta páginas con **imágenes, gráficos o tablas** y te deja elegir cuáles adjuntar como imagen (ZIP con `.md` + `pagina-N.jpg`, o compartir todo junto)
+- **Pestaña Unir**: junta varios PDF y/o imágenes en un solo PDF (ordenar, girar, quitar; páginas A4 o tamaño de la imagen) y, si quieres, lo pasa a Markdown
 - Calcula los tokens estimados y el ahorro
 - Descargar `.md`, copiar o compartir directamente con la app de Claude
 - Instalable (PWA) y funciona sin conexión
