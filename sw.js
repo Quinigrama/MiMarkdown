@@ -1,6 +1,6 @@
 // Mi Markdown — service worker: funciona sin conexión
-const CACHE = 'mi-markdown-v5';
-const SHELL = ['./', './index.html', './convert.js', './manifest.json', './icon.svg', './icon-192.png', './icon-512.png'];
+const CACHE = 'mi-markdown-v6';
+const SHELL = ['./', './index.html', './convert.js', './anon.js', './manifest.json', './icon.svg', './icon-192.png', './icon-512.png'];
 const PDFJS = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/';
 const CDN = 'https://cdn.jsdelivr.net/npm/';
 

@@ -9,6 +9,7 @@ Convierte **PDF** y **transcripciones de YouTube** a **Markdown** directamente e
 - **OCR** (Tesseract.js) para páginas escaneadas, también en local
 - Detecta páginas con **imágenes, gráficos o tablas** y te deja elegir cuáles adjuntar como imagen (ZIP con `.md` + `pagina-N.jpg`, o compartir todo junto)
 - **Pestaña Unir**: junta varios PDF y/o imágenes en un solo PDF (ordenar, girar, quitar; páginas A4 o tamaño de la imagen) y, si quieres, lo pasa a Markdown
+- **Pestaña Anonimizar**: tu lista de datos a ocultar (guardada solo en el dispositivo, editable, con copia de seguridad) + detección automática de DNI/NIE, teléfonos, emails e IBAN. En el Markdown los cambia por etiquetas (`[NOMBRE 1]`); en PDF e imágenes los tapa con recuadros negros (con OCR en escaneos) y genera un PDF sin texto oculto
 - Calcula los tokens estimados y el ahorro
 - Descargar `.md`, copiar o compartir directamente con la app de Claude
 - Instalable (PWA) y funciona sin conexión
