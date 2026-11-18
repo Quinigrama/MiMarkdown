@@ -1,5 +1,7 @@
 # Mi Markdown
 
+👉 **Abrir la app:** https://quinigrama.github.io/MiMarkdown/
+
 Convierte **PDF** y **transcripciones de YouTube** a **Markdown** directamente en tu navegador, para subirlos a Claude gastando muchos menos tokens.
 
 - 100 % local: el PDF nunca sale de tu dispositivo
